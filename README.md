@@ -1,0 +1,2 @@
+# philosophy_dialog_app
+ランダムマッチ哲学対話アプリ
