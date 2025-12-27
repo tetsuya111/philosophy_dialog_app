@@ -1,0 +1,24 @@
+# Ruffの詳細設定
+[tool.ruff]
+line-length = 160
+indent-width = 4
+target-version = "py314"
+exclude = ["config", "manage.py", "**/migrations/*.py", "tests*"]
+
+# Linterの設定 すべてのルールを有効にし、不要なものを除外する
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "D",    # pydocstyleのルール（ドキュメント文字列のチェック）
+    "E501", # line-too-long (フォーマッターに任せる)
+]
+
+# 特定のモジュールの使用を禁止にする(TID251)
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"logging.getLogger".msg = "「logging.getLogger」の代わりに「structlog.get_logger」を使用してください。"
+
+# Pylanceの設定
+[tool.pyright]
+pythonVersion = "3.14"
+typeCheckingMode = "standard"
+executionEnvironments = [{ root = "." }] # Djangoでインポートを正しく解決するため、実行環境を指定
