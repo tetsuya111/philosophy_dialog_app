@@ -42,8 +42,11 @@ class LoginView(APIView):
         serializer = self.serializer_class(data=request.data)
         print("XXX", request.data)
         serializer.is_valid(raise_exception=True)
+        print("XXX")
         validated_data = cast("dict", serializer.validated_data)
+        print("XXX")
         access = validated_data.get("access")
+        print("XXX")
 
         if access:
             response = Response(status=status.HTTP_200_OK)
@@ -77,6 +80,7 @@ class UserView(APIView):
         data = {
             "userid": request.user.pk,
             "username": username,
+            "matching_status": request.user.matching_status,
         }
         return Response(data, status=status.HTTP_200_OK)
 
