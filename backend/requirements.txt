@@ -1,0 +1,13 @@
+# インストールするパッケージを追記し「pip install -r requirements.txt」でインストールする
+# 「pip freeze > requirements.lock」で現在の依存関係を保存する
+coverage==7.13.0
+Django==6.0
+django-structlog==10.0.0
+djangorestframework-simplejwt==5.5.1
+djangorestframework==3.16.1
+drf-yasg==1.21.11
+gunicorn==23.0.0
+mysqlclient==2.2.7
+openpyxl==3.1.5
+pandas==2.3.3
+ruff==0.14.9
