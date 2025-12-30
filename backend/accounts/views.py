@@ -116,5 +116,8 @@ class DestroyView(generics.DestroyAPIView):
     serializer_class = CustomUserSerializer
 
     def destroy(self, request: Request) -> Response:
-        return super().destroy(request, pk=request.user.pk)
-        # return super().destroy(request)
+        self.kwargs = {
+            **self.kwargs,
+            "pk": request.user.pk,
+        }
+        return super().destroy(request)

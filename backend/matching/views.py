@@ -9,7 +9,7 @@ from .serializers import UserMatchingStatusSerializer
 
 
 # Create your views here.
-class PostProcessingHistoryView(APIView):
+class UserMatchingStatusyView(APIView):
     serializer_class = UserMatchingStatusSerializer
 
     def get(self, request: Request) -> Response:
@@ -21,6 +21,7 @@ class PostProcessingHistoryView(APIView):
             msg = "statusが範囲外です"
             return Response(msg, status=status.HTTP_400_BAD_REQUEST)
         request.user.matching_status = status
+        data = self.serializer_class(request.user.matching_status)
         return Response(data, status=status.HTTP_200_OK)
 
 
