@@ -1,69 +1,180 @@
-import { ThemedText } from '@/components/themed-text';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { Image } from 'expo-image';
-import { Button, StyleSheet, View } from 'react-native';
+// App.tsx
+import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import {
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
 
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedView } from '@/components/themed-view';
-
-export default function HomeScreen() {
-  
+export default function App() {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedText type="subtitle" style={styles.textContainer}>Today Question</ThemedText>
-      <ThemedView style={styles.buttonWrapper}>
-      <ThemedText type="subtitle" style={styles.textContainer}>What is moral?</ThemedText>
-      </ThemedView>
-      <View style={styles.blankContainer}>
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="dark-content" />
+
+      {/* header */}
+      <View style={styles.header}>
+        <Ionicons name="menu" size={28} color="#1f2933" />
+        <Text style={styles.headerTitle}>Home</Text>
+        <View style={{ width: 28 }} />
       </View>
-      <View style={styles.buttonWrapper}>
-      <Ionicons name="call" size={36} color="black" />
-      <Button title="Matching Start"
-      color="red"
-      accessibilityLabel="Learn more about this purple button"
-      />
+
+      {/* main content */}
+      <View style={styles.content}>
+        {/* 今日の問い */}
+        <Text style={styles.sectionTitle}>今日の問い</Text>
+        <View style={styles.sectionDivider} />
+
+        <View style={styles.questionCard}>
+          <Text style={styles.questionTitle}>「自由って何？」</Text>
+          <View style={styles.questionSubRow}>
+            <View style={styles.questionSubLine} />
+            <Text style={styles.questionSubText}>1行説明（任意）</Text>
+            <View style={styles.questionSubLine} />
+          </View>
+        </View>
+    </View>
+
+      {/* 対話ボタン */}
+      <View style={styles.callButtonWrapper}>
+        <View style={styles.callButton}>
+          <Ionicons name="call" size={28} color="#ffffff" />
+          <Text style={styles.callButtonText}>対話をはじめる</Text>
+        </View>
       </View>
-    </ParallaxScrollView>
+
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  textContainer:{
-    textAlign:"center"
+  safe: {
+    flex: 1,
+    backgroundColor: '#f5f7fb',
   },
-  titleContainer: {
+  header: {
+    height: 56,
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#e5e7eb',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1f2933',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  content: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
-  buttonWrapper: {
-    borderWidth: 2,
-    borderColor: "#007AFF",
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  sectionDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#e5e7eb',
+    marginBottom: 16,
+  },
+  questionCard: {
+    backgroundColor: '#ffffff',
     borderRadius: 8,
-    overflow: "hidden", // 角丸に沿わせたい場合
-    padding:32,
-    flexDirection: 'row',        // 横並び
-    gap: 8,                      // RN 0.71+ ならアイコンとボタンの間隔に gap も使える
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#e5e7eb',
   },
-  blankContainer:{
-    height:200
+  questionTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  questionSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  questionSubLine: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#d1d5db',
+    flex: 1,
+  },
+  questionSubText: {
+    marginHorizontal: 8,
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  tagRow: {
+    flexDirection: 'row',
+    marginTop: 16,
+  },
+  tag: {
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 12,
+  },
+  tagText: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  callButtonWrapper: {
+    paddingHorizontal: 16,
+    paddingBottom: 96,
+    paddingTop: 32,
+  },
+  callButton: {
+    backgroundColor: '#111827',
+    borderRadius: 999,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    // シンプルな擬似シャドウ
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  callButtonText: {
+    color: '#ffffff',
+    fontWeight: '800',
+    fontSize: 20,
+    marginLeft: 12,
+  },
+  tabBar: {
+    height: 72,
+    flexDirection: 'row',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#e5e7eb',
+    backgroundColor: '#ffffff',
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabLabel: {
+    fontSize: 14,
+    marginTop: 4,
+    color: '#9ca3af',
+  },
+  tabLabelActive: {
+    color: '#0070c9',
+    fontWeight: '700',
   },
 });
