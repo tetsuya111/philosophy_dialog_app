@@ -1,9 +1,8 @@
 from django.urls import path
 
-from .views import join_matching
+from .views import cancel_matching, join_matching
 
 urlpatterns = [
     path("join/", join_matching),
-    path("status/"),
-    path("cancel/"),
+    path("cancel/", cancel_matching),
 ]

@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractBaseUser, UserManager
 from django.db import models
 
+from .choices import UserMatchingStatus
+
 
 class CustomUserManager(UserManager):
     pass
@@ -9,6 +11,7 @@ class CustomUserManager(UserManager):
 # Create your models here.
 class CustomUser(AbstractBaseUser):
     username = models.CharField(max_length=40, unique=True, db_comment="ユーザー名")
+    matching_status = models.IntegerField(choices=UserMatchingStatus, db_comment="状態", default=UserMatchingStatus.NONE)
     created_at = models.DateTimeField(auto_now_add=True, null=True, db_comment="作成日時")
     updated_at = models.DateTimeField(auto_now=True, null=True, db_comment="更新日時")
     USERNAME_FIELD = "username"
