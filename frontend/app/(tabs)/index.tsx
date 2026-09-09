@@ -1,7 +1,9 @@
 // App.tsx
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import { useRouter } from 'expo-router';
+import React, { useCallback } from 'react';
 import {
+    Pressable,
     SafeAreaView,
     StatusBar,
     StyleSheet,
@@ -10,6 +12,13 @@ import {
 } from 'react-native';
 
 export default function App() {
+  const router = useRouter();
+
+  const handleStartAlone = useCallback(() => {
+    const room = `solo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    router.push({ pathname: '/meeting', params: { room } });
+  }, [router]);
+
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" />
@@ -43,6 +52,11 @@ export default function App() {
           <Ionicons name="call" size={28} color="#ffffff" />
           <Text style={styles.callButtonText}>対話をはじめる</Text>
         </View>
+
+        <Pressable style={styles.soloButton} onPress={handleStartAlone}>
+          <Ionicons name="person" size={20} color="#111827" />
+          <Text style={styles.soloButtonText}>一人で対話を開始する</Text>
+        </Pressable>
       </View>
 
     </SafeAreaView>
@@ -155,6 +169,24 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 20,
     marginLeft: 12,
+  },
+  soloButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#d1d5db',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  soloButtonText: {
+    color: '#111827',
+    fontWeight: '700',
+    fontSize: 16,
+    marginLeft: 8,
   },
   tabBar: {
     height: 72,

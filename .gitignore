@@ -136,6 +136,9 @@ celerybeat.pid
 
 # Environments
 .env
+# frontend/.env は秘密情報を含まないビルド設定（EXPO_ROUTER_DISABLE_RN_NAVIGATION_CHECK）で、
+# Jitsi通話機能に必須のためコミット対象とする（docs/frontend.md 参照）。
+!frontend/.env
 .envrc
 .venv
 env/
