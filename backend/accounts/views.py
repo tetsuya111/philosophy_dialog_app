@@ -80,7 +80,6 @@ class UserView(APIView):
         data = {
             "userid": request.user.pk,
             "username": username,
-            "matching_status": request.user.matching_status,
         }
         return Response(data, status=status.HTTP_200_OK)
 
