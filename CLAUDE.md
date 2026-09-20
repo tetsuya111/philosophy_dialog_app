@@ -28,6 +28,7 @@
 機能のテスト手順・操作手順など、実行手順そのものを説明するドキュメントは `manuals/` 配下に作成する（`docs/`はセットアップ・アーキテクチャ等の説明、`.kiro/specs/`は仕様策定のためのドキュメントであり、動作確認・操作の手順書はこれらと区別して `manuals/` に置く）。新しいマニュアルを作成した際は、以下に一覧を追記すること。
 
 - [manuals/video-call-testing.md](manuals/video-call-testing.md) — ビデオ通話（Jitsi Meet SDK）のテスト手順
+- [manuals/random-call-testing.md](manuals/random-call-testing.md) — ランダムコール（待機列・4人マッチング・通話）の動作確認手順
 
 ## 開発ワークフロー（`.kiro/`）
 
@@ -69,4 +70,4 @@ Claude Codeとのやり取りではコンテキスト消費（トークン使用
 - リポジトリ内の `README.md`（ルート、`backend/`、`frontend/` などすべて）は日本語で記載すること。
 - バックエンドとフロントエンドはそれぞれ独立した `.gitignore` を持つ。環境依存の設定（`.env` など）を追加する際は両方を確認すること。
 - バックエンドに新しいアプリを追加する際は `accounts/` の構成に倣い、`INSTALLED_APPS` への登録とURLの `include()` を忘れないこと（詳細は [docs/backend.md](docs/backend.md)）。
-- バックエンドはCORS未対応（`django-cors-headers` 未導入）。フロントエンドからブラウザ経由（Expo Web等）でAPIを呼び出す機能を追加する場合は、CORS設定の追加が必要になる点に注意すること。
+- バックエンドは `django-cors-headers` でCORSに対応済み（許可オリジンは環境変数 `CORS_ALLOWED_ORIGINS`、既定はExpo Webの `http://localhost:8081`）。独自ヘッダーを使うAPIを追加する場合は `CORS_ALLOW_HEADERS` への追加も必要になる（詳細は [docs/backend.md](docs/backend.md)）。

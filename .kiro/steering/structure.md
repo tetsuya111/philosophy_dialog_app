@@ -5,13 +5,14 @@
 ├── backend/           # Django REST Framework API
 │   ├── backend/        # Djangoプロジェクト本体（settings.py, urls.py, wsgi/asgi）
 │   ├── accounts/        # ユーザー登録・認証（新規アプリの雛形）
-│   ├── matching/        # ランダムマッチング（待機列・Room）
+│   ├── matching/        # ランダムコール（待機列・Room・ログインなしの利用者識別子）
 │   ├── shared/           # アプリ横断のミドルウェア等
 │   └── manage.py
 ├── frontend/          # Expo (React Native, TypeScript) アプリ
 │   ├── app/             # expo-routerのファイルベースルーティング
 │   ├── components/       # 再利用可能なUIコンポーネント
 │   ├── hooks/             # 共通ロジック（カスタムフック）
+│   ├── lib/               # 画面に依存しない共通処理（バックエンドAPIクライアント等）
 │   └── constants/          # テーマ・定数
 ├── docs/              # 各種ドキュメント（CLAUDE.mdの索引先）
 ├── .kiro/             # steering / specs / hooks（本ファイル群）
