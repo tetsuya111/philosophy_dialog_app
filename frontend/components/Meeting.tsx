@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 
 import { JitsiMeeting } from '@jitsi/react-native-sdk';
 
@@ -7,17 +7,38 @@ import { useRouter } from 'expo-router';
 
 interface MeetingProps {
   room: string;
+  /** 通話を閉じるとき（通話終了操作・endsAt到達）に、直前の画面へ戻る前に1回だけ呼ばれる */
+  onClose?: () => void;
+  /** この時刻（ミリ秒）に達したら通話を自動で閉じる（ランダムコールの有効時間の満了） */
+  endsAt?: number;
 }
 
-const Meeting = ( { room }: MeetingProps ) => {
+const Meeting = ( { room, onClose, endsAt }: MeetingProps ) => {
   const jitsiMeeting = useRef(null);
   const router = useRouter();
+  // close() が onReadyToClose を再度発火させても、onClose と router.back() を二重に実行しない
+  const closedRef = useRef(false);
 
-  const onReadyToClose = useCallback(() => {
+  const closeMeeting = useCallback(() => {
+    if (closedRef.current) {
+      return;
+    }
+    closedRef.current = true;
     // @ts-ignore
     jitsiMeeting.current?.close();
+    onClose?.();
     router.back();
-  }, [router]);
+  }, [onClose, router]);
+
+  const onReadyToClose = closeMeeting;
+
+  useEffect(() => {
+    if (endsAt === undefined) {
+      return;
+    }
+    const timer = setTimeout(closeMeeting, Math.max(0, endsAt - Date.now()));
+    return () => clearTimeout(timer);
+  }, [endsAt, closeMeeting]);
 
   const onEndpointMessageReceived = useCallback(() => {
       console.log('You got a message!');

@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
 import {
+    ActivityIndicator,
     Pressable,
     SafeAreaView,
     StatusBar,
@@ -11,13 +12,35 @@ import {
     View,
 } from 'react-native';
 
+import { useRandomCall } from '@/hooks/use-random-call';
+
+// 待機の残り時間（m:ss）
+function formatMinutesSeconds(ms: number): string {
+  const totalSeconds = Math.ceil(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
 export default function App() {
   const router = useRouter();
+  const randomCall = useRandomCall();
+  const { enter } = randomCall;
 
   const handleStartAlone = useCallback(() => {
     const room = `solo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     router.push({ pathname: '/meeting', params: { room } });
   }, [router]);
+
+  const handleEnterRandomCall = useCallback(async () => {
+    const entered = await enter();
+    if (entered) {
+      router.push({
+        pathname: '/meeting',
+        params: { room: entered.roomName, mode: 'random', endsAt: String(entered.endsAt) },
+      });
+    }
+  }, [enter, router]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -46,12 +69,54 @@ export default function App() {
         </View>
     </View>
 
-      {/* 対話ボタン */}
+      {/* 対話ボタン（ランダムコールの状態に応じて切り替える） */}
       <View style={styles.callButtonWrapper}>
-        <View style={styles.callButton}>
-          <Ionicons name="call" size={28} color="#ffffff" />
-          <Text style={styles.callButtonText}>対話をはじめる</Text>
-        </View>
+        {randomCall.notice && <Text style={styles.noticeText}>{randomCall.notice}</Text>}
+
+        {randomCall.status === 'none' && (
+          <Pressable
+            style={[styles.callButton, randomCall.busy && styles.buttonBusy]}
+            onPress={randomCall.join}
+            disabled={randomCall.busy}>
+            <Ionicons name="call" size={28} color="#ffffff" />
+            <Text style={styles.callButtonText}>対話をはじめる</Text>
+          </Pressable>
+        )}
+
+        {randomCall.status === 'waiting' && (
+          <>
+            <View style={styles.statusRow}>
+              <ActivityIndicator color="#111827" />
+              <Text style={[styles.statusText, styles.statusTextBesideIcon]}>
+                相手を探しています
+                {randomCall.remainingMs !== null && `（残り ${formatMinutesSeconds(randomCall.remainingMs)}）`}
+              </Text>
+            </View>
+            <Pressable
+              style={[styles.soloButton, randomCall.busy && styles.buttonBusy]}
+              onPress={randomCall.cancel}
+              disabled={randomCall.busy}>
+              <Ionicons name="close" size={20} color="#111827" />
+              <Text style={styles.soloButtonText}>待機をやめる</Text>
+            </Pressable>
+          </>
+        )}
+
+        {(randomCall.status === 'matched' || randomCall.status === 'in_call') && (
+          <>
+            <Text style={styles.statusText}>
+              メンバーが揃いました
+              {randomCall.remainingMs !== null && `（残り約${Math.ceil(randomCall.remainingMs / 60000)}分）`}
+            </Text>
+            <Pressable
+              style={[styles.callButton, randomCall.busy && styles.buttonBusy]}
+              onPress={handleEnterRandomCall}
+              disabled={randomCall.busy}>
+              <Ionicons name="videocam" size={28} color="#ffffff" />
+              <Text style={styles.callButtonText}>対話に参加</Text>
+            </Pressable>
+          </>
+        )}
 
         <Pressable style={styles.soloButton} onPress={handleStartAlone}>
           <Ionicons name="person" size={20} color="#111827" />
@@ -169,6 +234,30 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 20,
     marginLeft: 12,
+  },
+  buttonBusy: {
+    opacity: 0.5,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    textAlign: 'center',
+    marginVertical: 12,
+  },
+  statusTextBesideIcon: {
+    marginLeft: 8,
+  },
+  noticeText: {
+    fontSize: 14,
+    color: '#b91c1c',
+    textAlign: 'center',
+    marginBottom: 12,
   },
   soloButton: {
     backgroundColor: '#ffffff',

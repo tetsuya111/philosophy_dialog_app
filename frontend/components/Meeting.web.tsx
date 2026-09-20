@@ -1,9 +1,13 @@
 import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 interface MeetingProps {
   room: string;
+  /** 通話を閉じるとき（通話終了操作・endsAt到達）に、直前の画面へ戻る前に1回だけ呼ばれる */
+  onClose?: () => void;
+  /** この時刻（ミリ秒）に達したら通話を自動で閉じる（ランダムコールの有効時間の満了） */
+  endsAt?: number;
 }
 
 interface JitsiMeetExternalApiInstance {
@@ -51,13 +55,32 @@ function loadJitsiExternalApi(): Promise<void> {
 
 type Status = 'loading' | 'ready' | 'error';
 
-const Meeting = ({ room }: MeetingProps) => {
+const Meeting = ({ room, onClose, endsAt }: MeetingProps) => {
   const router = useRouter();
   // react-native-webのViewは実DOM上ではdivとしてレンダリングされ、
   // refはその実DOMノードを指す（JitsiMeetExternalAPIのparentNodeに渡すため必要）
   const containerRef = useRef<any>(null);
   const apiRef = useRef<JitsiMeetExternalApiInstance | null>(null);
   const [status, setStatus] = useState<Status>('loading');
+  // onClose が変わってもJitsiを作り直さないよう、最新の値をrefで参照する
+  const onCloseRef = useRef(onClose);
+  // readyToClose と endsAt が重なっても、onClose と router.back() を二重に実行しない
+  const closedRef = useRef(false);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  const closeMeeting = useCallback(() => {
+    if (closedRef.current) {
+      return;
+    }
+    closedRef.current = true;
+    apiRef.current?.dispose();
+    apiRef.current = null;
+    onCloseRef.current?.();
+    router.back();
+  }, [router]);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,9 +102,7 @@ const Meeting = ({ room }: MeetingProps) => {
           height: '100%',
         });
         apiRef.current = api;
-        api.addEventListener('readyToClose', () => {
-          router.back();
-        });
+        api.addEventListener('readyToClose', closeMeeting);
         setStatus('ready');
       })
       .catch(() => {
@@ -95,7 +116,15 @@ const Meeting = ({ room }: MeetingProps) => {
       apiRef.current?.dispose();
       apiRef.current = null;
     };
-  }, [room, router]);
+  }, [room, closeMeeting]);
+
+  useEffect(() => {
+    if (endsAt === undefined) {
+      return;
+    }
+    const timer = setTimeout(closeMeeting, Math.max(0, endsAt - Date.now()));
+    return () => clearTimeout(timer);
+  }, [endsAt, closeMeeting]);
 
   return (
     <View style={styles.container}>
