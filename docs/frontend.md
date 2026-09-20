@@ -6,8 +6,10 @@ Expo（React Native, TypeScript, [expo-router](https://docs.expo.dev/router/intr
 
 ```bash
 cd frontend
-npm install
+yarn install
 ```
+
+依存関係は `yarn.lock` で管理しているため、インストールには **yarn を使う**（`npm install` は使わない）。`@jitsi/react-native-sdk` が peerDependencies で指定するバージョンと、意図的に揃えたバージョン（例: `@react-native-async-storage/async-storage` は `@amplitude/analytics-react-native` との重複を避けるため `1.24.0`。[logs/20260906_211835_fix_dedupe-react-native-screens-async-storage.md](../logs/20260906_211835_fix_dedupe-react-native-screens-async-storage.md)）が一部食い違っており、npm は `ERESOLVE` エラーで停止するため。Node 22 未満では一部の開発用パッケージのエンジン要件で停止するので、その場合は `yarn install --ignore-engines` を使うか Node 22 以上にする。起動・lint などのスクリプトは従来どおり `npm run <script>` で実行してよい。
 
 Android実機/エミュレータ向けのネイティブビルド（`npm run android` / Windowsでは`npm run android:win`）を行う場合は、事前に`ANDROID_HOME`環境変数がAndroid SDKのインストール先（例: Windowsのデフォルトでは`%LOCALAPPDATA%\Android\Sdk`）を指すように設定しておくこと。未設定の場合、Gradleビルドが`SDK location not found`エラーで失敗する（[.kiro/specs/fix-android-sdk-location-error/](../.kiro/specs/fix-android-sdk-location-error/)参照）。`frontend/android/local.properties`は`expo prebuild`のたびに再生成される生成物（`.gitignore`対象）のため、`ANDROID_HOME`側を恒久的に設定しておく方針とする。
 
@@ -25,13 +27,19 @@ npm run lint     # ESLint実行（eslint-config-expo）
 
 ## 設定
 
-APIベースURLなど環境依存の値を扱う仕組みは現時点で未導入。追加する場合はExpoの規約に従い、クライアントに公開してよい値のみ `EXPO_PUBLIC_` プレフィックスの環境変数として扱うこと（非公開のシークレットを `EXPO_PUBLIC_*` に入れない）。アプリ自体の設定（名前・スキーム・バンドルID等）は `app.json` で管理する。
+環境依存の値は `frontend/.env` に置く。クライアントに公開される値は、Expoの規約に従い `EXPO_PUBLIC_` プレフィックスの環境変数として扱う。
+
+- `EXPO_PUBLIC_API_BASE_URL` — バックエンドAPIのURL（既定 `http://localhost:8000`）。Android（エミュレータ・実機）からは `adb reverse tcp:8000 tcp:8000` を実行し、`localhost:8000` をホストのバックエンドにつなぐ（Metroの8081と同じ方式。`ALLOWED_HOSTS` を変えずに済む）。Web版からの呼び出しにはバックエンドのCORS設定が必要（[docs/backend.md](backend.md)）。
+
+新しい値を追加する場合もExpoの規約に従い、クライアントに公開してよい値のみ `EXPO_PUBLIC_` プレフィックスの環境変数として扱うこと（非公開のシークレットを `EXPO_PUBLIC_*` に入れない）。アプリ自体の設定（名前・スキーム・バンドルID等）は `app.json` で管理する。
 
 ## アーキテクチャ
 
 - ルーティングは `app/` 配下のファイルベースルーティング（expo-router）。`app/_layout.tsx` がルートレイアウト、`app/(tabs)/` がタブグループ（`index.tsx`=Home、`rooms.tsx`=Rooms、`_layout.tsx`でタブ構成を定義）、`app/modal.tsx` がモーダル画面。
 - TypeScriptを使用し、パスエイリアス `@/*` は `frontend/` 直下を指す（`tsconfig.json` 参照）。
 - 再利用可能なUIコンポーネントは `components/`（プラットフォーム分岐が必要なものは `Meeting.tsx` / `Meeting.web.tsx` のように `.web.tsx` サフィックスで出し分ける）、共通ロジックは `hooks/`、テーマ・定数は `constants/` に置く。
+- バックエンドAPIの呼び出しなど、画面に依存しない共通処理は `lib/` に置く。ランダムコール（[.kiro/specs/random-call/](../.kiro/specs/random-call/design.md)）では、`lib/client-id.ts`（ログインなしの利用者識別子をAsyncStorageに保存）、`lib/api-client.ts`（`X-Client-Id` を付けたfetch、401時は識別子を発行し直して1回だけ再試行）、`lib/random-call.ts`（API関数と型）を使い、Home画面の状態管理とポーリングは `hooks/use-random-call.ts` が担う。リポジトリ直下の `.gitignore` はPython用に `lib/` を無視するため、`!frontend/lib/` で追跡対象に戻している。
+- 通話画面 `app/meeting.tsx` は `room` パラメータに加え、ランダムコールからの遷移時のみ `mode=random`・`endsAt`（有効期限、端末時刻のミリ秒）を受け取り、`Meeting` の任意props `onClose`（通話終了をバックエンドに記録）・`endsAt`（その時刻に通話を自動で閉じる）に渡す。「一人で対話を開始する」は `room` のみで従来どおり動く。
 - スタイリングはCSSではなく React Native の `StyleSheet`/インラインスタイルを使用する。
 - 通話・対話ルーム機能は `@jitsi/react-native-sdk`（Jitsi Meet）を利用する。Web版（`components/Meeting.web.tsx`）はネイティブモジュールが使えないため、Jitsiが提供する`https://meet.jit.si/external_api.js`（Jitsi Meet API）を動的に読み込み、`View`の実DOMノードに埋め込む方式を使う（[.kiro/specs/web-video-call-support/](../.kiro/specs/web-video-call-support/)参照）。
 - Expo SDK 56（React Native 0.85系）を使用。SDK56では`app.json`に`expo.newArchEnabled`プロパティ自体が存在せず、New Architectureが常時有効固定になっている。当初`@jitsi/react-native-sdk@11.6.3`はNew Architecture非互換のため無効化していたが（[.kiro/specs/fix-jitsi-meeting-crash/](../.kiro/specs/fix-jitsi-meeting-crash/)）、`@jitsi/react-native-sdk@13.x`はNew Architecture・Fabric・Bridgeless Modeに正式対応したため、Expo SDK 56・Jitsi SDK 13.xへまとめてアップグレードした（[.kiro/specs/upgrade-expo-sdk56-jitsi13/](../.kiro/specs/upgrade-expo-sdk56-jitsi13/)参照）。

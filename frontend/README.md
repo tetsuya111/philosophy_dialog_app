@@ -5,9 +5,11 @@
 ## セットアップ
 
 ```bash
-npm install
+yarn install
 npm run start
 ```
+
+依存関係のインストールには yarn を使う（`npm install` は peerDependencies の食い違いで失敗する。詳細は [docs/frontend.md](../docs/frontend.md)）。
 
 `npm run start` はExpo開発サーバーを起動する。表示されるQRコードからExpo Go/開発ビルドで実機確認するか、以下のコマンドで各プラットフォーム向けに直接起動できる。
 

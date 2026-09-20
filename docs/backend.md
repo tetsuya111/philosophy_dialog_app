@@ -23,11 +23,18 @@ python manage.py test                   # 全テスト実行
 python manage.py test accounts          # 特定アプリのテストのみ実行
 python manage.py test accounts.tests.ClassName.test_method_name  # 単一テストの実行
 python manage.py check                  # サーバーを起動せず設定を検証
+python manage.py expire_random_calls    # ランダムコールの待機タイムアウト・通話の満了を処理する(本番では1分間隔で定期実行)
+python manage.py add_dummy_waiters 3    # 手動確認用: ダミーのゲストを待機列に追加する(DEBUG=Trueのときのみ)
 ```
+
+`requirements.txt` に依存パッケージを追加した場合(例: ランダムコールで追加した `django-cors-headers`)は、`pip install -r requirements.txt` を再実行すること。
 
 ## 設定
 
 現状、設定は `backend/backend/settings.py` に直書きされており、環境変数からの読み込みは未導入（`SECRET_KEY` はコード内にハードコード、`DEBUG = True` 固定、`DATABASES` は常にリポジトリ直下の `db.sqlite3` を使うSQLite固定）。本番相当の環境を用意する際は、シークレットやDB接続先を環境変数化する対応が別途必要になる。
+
+- CORS: `django-cors-headers` を導入済み。許可するオリジンは環境変数 `CORS_ALLOWED_ORIGINS`(カンマ区切り、既定 `http://localhost:8081` = Expo Webの開発サーバー)で指定する。ランダムコールの利用者識別子を送る `X-Client-Id` ヘッダーを `CORS_ALLOW_HEADERS` に追加している。
+- レート制限: `REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]` の `matching_client`(利用者識別子の発行、IPごとに `30/hour`)。
 
 ## アーキテクチャ
 
@@ -41,9 +48,12 @@ python manage.py check                  # サーバーを起動せず設定を�
   - `GET /api/auth/logout/` — ログアウト（Cookie削除）
   - `GET /api/auth/user/me/` — 認証中ユーザーの取得
   - `DELETE /api/auth/delete/` — 認証中ユーザー自身の削除
-- マッチング関連エンドポイント（`matching/urls.py`、`/api/matching/` 配下）:
-  - `GET /api/matching/join/` — 待機列（`WaitingQueue`）への参加
-  - `GET /api/matching/cancel/` — 待機列からの離脱
-  - ユーザーのマッチング状態は `accounts.CustomUser.matching_status`（`accounts/choices.py` の `UserMatchingStatus`: `NONE`/`WATING`/`JOINED`）で管理する。
-  - 待機列は `matching/signals.py` の `post_save` シグナル（`add_to_queue`）で監視しており、`WaitingQueue` の件数が `WAITING_LIMIT_N`（現状4）に達すると、先頭4件のユーザーをまとめて `Room` に割り当て、対象の `WaitingQueue` を削除する（4人単位のグループマッチング）。
+- ランダムコール(`matching/`、`/api/matching/` 配下。仕様は [.kiro/specs/random-call/](../.kiro/specs/random-call/design.md))
+  - **ログインなしで使う。** JWTではなく、`POST /api/matching/client/` でサーバーが発行した利用者識別子を `X-Client-Id` ヘッダーで送り、`matching/authentication.py` の `ClientIdAuthentication` で認証する(ビュー単位で `authentication_classes` を差し替えており、グローバル設定と `accounts` のJWT認証には影響しない)。識別子ごとにゲスト用の `CustomUser`(`guest-...`、パスワード無効)と `GuestClient`(識別子のSHA-256のみ保存)を作る。
+  - エンドポイント: `POST client/`(発行、認証不要) / `GET status/` / `POST join/` / `POST cancel/` / `POST call/enter/` / `POST call/leave/`。状態を変えるものはすべて `POST`。
+  - ユーザーの状態(`none`/`waiting`/`matched`/`in_call`)はDBに保存せず、`WaitingQueue` と `RoomMember`(`is_active`・`joined_at`)の行の有無から導出する(`services.get_state()`)。旧 `CustomUser.matching_status` は廃止した。
+  - 状態を変える処理はすべて `matching/services.py` に集約し、`transaction.atomic()` + `select_for_update()` で同時実行時の不整合を防ぐ。待機列が `GROUP_SIZE`(4)に達すると `join_queue()` の中で先頭4人を `Room` にまとめる(`post_save` シグナルは使わない)。
+  - 設定値(人数・待機タイムアウト5分・通話の有効時間30分)は `matching/constants.py` の1箇所で管理する。
+  - タイムアウト・満了は常駐ワーカーを使わず、`status`/`join`/`call/enter` の先頭で `expire_stale()` を呼ぶ遅延評価と、管理コマンド `expire_random_calls` の二段構えで処理する。
+  - ログは `structlog.get_logger("matching")` で出す(利用者識別子・ルーム名は出さない)。
 - `accounts/` は今後アプリを追加する際の雛形。`serializers.py` にDRFシリアライザ、`views.py` にAPIビュー、`urls.py` をプロジェクトルートから `/api/<app>/` プレフィックスでincludeする、という構成に従うこと。
